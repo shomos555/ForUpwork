@@ -90,13 +90,21 @@ fi
 echo -e "\n--- Сетевые соединения (netstat) ---" >> "$LOG_FILE"
 netstat -tunlp >> "$LOG_FILE"
 
-# Автоматическая загрузка отчёта на сервер через curl с базовой аутентификацией
-
+# Автоматическая загрузка отчёта на сервер через curl или wget
 UPLOAD_URL="http://<server_ip>:5454/upload.php"
 USERNAME="your_username"
 PASSWORD="your_password"
 
-curl -u "$USERNAME:$PASSWORD" -X POST -F "file=@$LOG_FILE" $UPLOAD_URL
+# Проверяем, установлен ли curl, если нет, используем wget
+if command -v curl >/dev/null 2>&1; then
+    echo "Используем curl для загрузки файла"
+    curl -u "$USERNAME:$PASSWORD" -X POST -F "file=@$LOG_FILE" $UPLOAD_URL
+elif command -v wget >/dev/null 2>&1; then
+    echo "curl не найден, используем wget для загрузки файла"
+    wget --user="$USERNAME" --password="$PASSWORD" --post-file="$LOG_FILE" "$UPLOAD_URL"
+else
+    echo "Ошибка: ни curl, ни wget не установлены. Не могу загрузить отчёт."
+fi
 
 # Сообщение о завершении
 echo -e "\nОтчёт сохранён в $LOG_FILE и загружен на сервер."
