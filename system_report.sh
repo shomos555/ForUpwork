@@ -1,10 +1,13 @@
 #!/bin/bash
 
-# Путь к файлу для сохранения отчёта
-LOG_FILE="/var/log/system_report_$(date '+%Y-%m-%d_%H-%M-%S').log"
+# Получаем имя хоста
+HOSTNAME=$(hostname)
+
+# Путь к файлу для сохранения отчёта с добавлением имени хоста
+LOG_FILE="/var/log/${HOSTNAME}_system_report_$(date '+%Y-%m-%d_%H-%M-%S').log"
 
 # 1. Информация о загрузке процессора и памяти
-echo "=== Отчёт системы на $(date) ===" > "$LOG_FILE"
+echo "=== Отчёт системы на $(date) от $HOSTNAME ===" > "$LOG_FILE"
 top -b -n 1 | head -n 20 >> "$LOG_FILE"
 
 # 2. Информация о дисковом пространстве
@@ -88,9 +91,11 @@ echo -e "\n--- Сетевые соединения (netstat) ---" >> "$LOG_FILE"
 netstat -tunlp >> "$LOG_FILE"
 
 # Автоматическая загрузка отчёта на сервер через curl с базовой аутентификацией
-UPLOAD_URL="http://<server_ip>/upload.php"
+
+UPLOAD_URL="http://<server_ip>:5454/upload.php"
 USERNAME="your_username"
 PASSWORD="your_password"
+
 curl -u "$USERNAME:$PASSWORD" -X POST -F "file=@$LOG_FILE" $UPLOAD_URL
 
 # Сообщение о завершении
