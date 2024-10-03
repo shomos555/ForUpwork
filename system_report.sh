@@ -3,11 +3,8 @@
 # Путь к файлу для сохранения отчёта
 LOG_FILE="/var/log/system_report_$(date '+%Y-%m-%d_%H-%M-%S').log"
 
-# Информация о дате и времени
-echo "=== Отчёт системы на $(date) ===" > "$LOG_FILE"
-
 # 1. Информация о загрузке процессора и памяти
-echo -e "\n--- Загрузка процессора и памяти ---" >> "$LOG_FILE"
+echo "=== Отчёт системы на $(date) ===" > "$LOG_FILE"
 top -b -n 1 | head -n 20 >> "$LOG_FILE"
 
 # 2. Информация о дисковом пространстве
@@ -23,7 +20,8 @@ echo -e "\n--- Сетевая активность (RX/TX) ---" >> "$LOG_FILE"
 if command -v iftop >/dev/null 2>&1; then
     iftop -t -s 5 >> "$LOG_FILE"
 else
-    echo "iftop не установлен, пропускаем сбор сетевой информации" >> "$LOG_FILE"
+    echo "iftop не установлен, используем netstat" >> "$LOG_FILE"
+    netstat -tunlp >> "$LOG_FILE"
 fi
 
 # 5. Использование swap
@@ -45,10 +43,55 @@ journalctl -xe --no-pager | tail -n 50 >> "$LOG_FILE"
 echo -e "\n--- Время работы системы ---" >> "$LOG_FILE"
 uptime >> "$LOG_FILE"
 
-# 9. Список работающих сервисов
+# 9. Информация об архитектуре системы
+echo -e "\n--- Архитектура системы ---" >> "$LOG_FILE"
+arch >> "$LOG_FILE"
+
+# 10. Информация о дистрибутиве
+echo -e "\n--- Информация о дистрибутиве ---" >> "$LOG_FILE"
+cat /etc/os-release >> "$LOG_FILE"
+
+# 11. Средняя загрузка системы
+echo -e "\n--- Средняя загрузка системы ---" >> "$LOG_FILE"
+cat /proc/loadavg >> "$LOG_FILE"
+
+# 12. Температура процессора (если доступно)
+echo -e "\n--- Температура системы ---" >> "$LOG_FILE"
+if command -v sensors >/dev/null 2>&1; then
+    sensors >> "$LOG_FILE"
+else
+    echo "Датчики температуры недоступны" >> "$LOG_FILE"
+fi
+
+# 13. Активные сервисы
 echo -e "\n--- Активные сервисы ---" >> "$LOG_FILE"
 systemctl list-units --type=service --state=running >> "$LOG_FILE"
 
-# Сообщение о завершении
-echo -e "\nОтчёт сохранён в $LOG_FILE"
+# 14. Ограничения по использованию ресурсов
+echo -e "\n--- Ограничения по использованию ресурсов ---" >> "$LOG_FILE"
+ulimit -a >> "$LOG_FILE"
 
+# 15. Использование дискового пространства в /var/log
+echo -e "\n--- Использование дискового пространства в /var/log ---" >> "$LOG_FILE"
+du -h --max-depth=1 /var/log >> "$LOG_FILE"
+
+# 16. Состояние RAID (если используется)
+echo -e "\n--- Состояние RAID ---" >> "$LOG_FILE"
+if [ -f /proc/mdstat ]; then
+    cat /proc/mdstat >> "$LOG_FILE"
+else
+    echo "RAID не используется" >> "$LOG_FILE"
+fi
+
+# 17. Информация о сетевых соединениях через netstat
+echo -e "\n--- Сетевые соединения (netstat) ---" >> "$LOG_FILE"
+netstat -tunlp >> "$LOG_FILE"
+
+# Автоматическая загрузка отчёта на сервер через curl с базовой аутентификацией
+UPLOAD_URL="http://<server_ip>/upload.php"
+USERNAME="your_username"
+PASSWORD="your_password"
+curl -u "$USERNAME:$PASSWORD" -X POST -F "file=@$LOG_FILE" $UPLOAD_URL
+
+# Сообщение о завершении
+echo -e "\nОтчёт сохранён в $LOG_FILE и загружен на сервер."
