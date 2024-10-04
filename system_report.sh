@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# Получаем директорию, где находится скрипт
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+
 # Получаем имя хоста
 HOSTNAME=$(hostname)
 
 # Путь к файлу для сохранения отчёта с добавлением имени хоста
-LOG_FILE="/var/log/${HOSTNAME}_system_report_$(date '+%Y-%m-%d_%H-%M-%S').log"
+LOG_FILE="$SCRIPT_DIR/${HOSTNAME}_system_report_$(date '+%Y-%m-%d_%H-%M-%S').log"
 
 # 1. Информация о загрузке процессора и памяти
 echo "=== Отчёт системы на $(date) от $HOSTNAME ===" > "$LOG_FILE"
