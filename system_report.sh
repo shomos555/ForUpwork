@@ -1,5 +1,19 @@
 #!/bin/bash
 
+# Проверяем, переданы ли IP сервера, имя пользователя и пароль
+if [ "$#" -ne 3 ]; then
+  echo "Использование: $0 <IP сервера> <имя пользователя> <пароль>"
+  exit 1
+fi
+
+# Получаем аргументы
+SERVER_IP=$1
+USERNAME=$2
+PASSWORD=$3
+
+# Жестко заданный URL с использованием переданного IP
+UPLOAD_URL="http://$SERVER_IP:5454/upload.php"
+
 # Получаем директорию, где находится скрипт
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
@@ -104,11 +118,6 @@ echo -e "\n--- Сетевые соединения (netstat) ---" >> "$LOG_FILE"
 check_command "netstat" && netstat -tunlp >> "$LOG_FILE"
 
 # Автоматическая загрузка отчёта на сервер через curl или wget
-UPLOAD_URL="http://<server_ip>:5454/upload.php"
-USERNAME="your_username"
-PASSWORD="your_password"
-
-# Проверяем, установлен ли curl, если нет, используем wget
 if check_command "curl"; then
     echo "Используем curl для загрузки файла"
     curl -u "$USERNAME:$PASSWORD" -X POST -F "file=@$LOG_FILE" $UPLOAD_URL
